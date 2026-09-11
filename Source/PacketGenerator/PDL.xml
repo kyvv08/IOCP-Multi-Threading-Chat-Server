@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<PDL>
+  <!-- [인증 / 로그인 / 하트비트] -->
+  <Packet name="C_LOGIN" id="1001">
+    <Member name="name" type="string" />
+  </Packet>
+  
+  <Packet name="S_LOGIN" id="1002">
+    <Member name="success" type="bool" />
+    <Member name="playerId" type="uint64" />
+    <Member name="name" type="string" />
+    <Member name="message" type="string" />
+  </Packet>
+
+  <Packet name="C_HEARTBEAT" id="1003">
+    <Member name="clientTick" type="uint64" />
+  </Packet>
+
+  <Packet name="S_HEARTBEAT" id="1004">
+    <Member name="serverTick" type="uint64" />
+  </Packet>
+
+  <!-- [채팅방 목록 및 입장/퇴장] -->
+  <Packet name="C_ROOM_LIST" id="1005">
+  </Packet>
+
+  <Packet name="S_ROOM_LIST" id="1006">
+    <List name="rooms">
+      <Member name="roomId" type="int32" />
+      <Member name="roomName" type="string" />
+      <Member name="userCount" type="int32" />
+    </List>
+  </Packet>
+
+  <Packet name="C_ENTER_ROOM" id="1007">
+    <Member name="roomId" type="int32" />
+    <Member name="roomName" type="string" />
+  </Packet>
+
+  <Packet name="S_ENTER_ROOM" id="1008">
+    <Member name="success" type="bool" />
+    <Member name="roomId" type="int32" />
+    <Member name="roomName" type="string" />
+    <List name="members">
+      <Member name="name" type="string" />
+    </List>
+  </Packet>
+
+  <Packet name="C_LEAVE_ROOM" id="1009">
+  </Packet>
+
+  <Packet name="S_LEAVE_ROOM" id="1010">
+    <Member name="success" type="bool" />
+  </Packet>
+
+  <!-- [채팅 및 공지 브로드캐스트] -->
+  <Packet name="C_ROOM_CHAT" id="1011">
+    <Member name="message" type="string" />
+  </Packet>
+
+  <Packet name="S_ROOM_CHAT" id="1012">
+    <Member name="senderName" type="string" />
+    <Member name="message" type="string" />
+  </Packet>
+
+  <Packet name="C_GLOBAL_CHAT" id="1013">
+    <Member name="message" type="string" />
+  </Packet>
+
+  <Packet name="S_GLOBAL_CHAT" id="1014">
+    <Member name="senderName" type="string" />
+    <Member name="message" type="string" />
+  </Packet>
+
+  <Packet name="S_NOTICE" id="1015">
+    <Member name="message" type="string" />
+  </Packet>
+</PDL>

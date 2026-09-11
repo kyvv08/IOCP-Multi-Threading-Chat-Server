@@ -1,0 +1,14 @@
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\bin\Debug\net10.0\PacketGenerator.exe
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\bin\Debug\net10.0\PacketGenerator.deps.json
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\bin\Debug\net10.0\PacketGenerator.runtimeconfig.json
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\bin\Debug\net10.0\PacketGenerator.dll
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\bin\Debug\net10.0\PacketGenerator.pdb
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.AssemblyInfoInputs.cache
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.AssemblyInfo.cs
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.csproj.CoreCompileInputs.cache
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.dll
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\refint\PacketGenerator.dll
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.pdb
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\PacketGenerator.genruntimeconfig.cache
+C:\Users\ky499\source\repos\ChatServer\Source\PacketGenerator\obj\Debug\net10.0\ref\PacketGenerator.dll
