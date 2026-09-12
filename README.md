@@ -10,6 +10,9 @@
 > **대규모 동시 접속(10,000 CCU)을 처리하는 Windows IOCP 기반의 고성능 멀티스레드 채팅 서버 엔진 및 애플리케이션 포트폴리오**입니다.  
 > 힙 락 경합을 0%로 줄인 **Lock-Free 메모리 풀**, Zero-Copy 분할 수신 **Scatter-Gather 링버퍼**, 1:N 패킷 복사 비용을 없앤 **SendBuffer 청크 공유 모델**, 룸 내부 락을 원천 제거한 **Actor JobQueue**, C# 자동 패킷 생성기, 그리고 실시간 **어뷰징(플러딩/타임아웃) 방어 및 ANSI TUI 관제 시스템**을 포함합니다.
 
+
+!image.png
+
 ---
 
 ## 📑 목차 (Table of Contents)
