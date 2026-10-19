@@ -38,7 +38,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_LOGIN;
@@ -78,7 +78,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_LOGIN;
@@ -115,7 +115,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_HEARTBEAT;
@@ -149,7 +149,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_HEARTBEAT;
@@ -181,7 +181,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_ROOM_LIST;
@@ -228,7 +228,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_ROOM_LIST;
@@ -271,7 +271,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_ENTER_ROOM;
@@ -322,7 +322,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_ENTER_ROOM;
@@ -362,7 +362,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_LEAVE_ROOM;
@@ -395,7 +395,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_LEAVE_ROOM;
@@ -429,7 +429,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_ROOM_CHAT;
@@ -465,7 +465,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_ROOM_CHAT;
@@ -500,7 +500,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_C_GLOBAL_CHAT;
@@ -536,7 +536,7 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_GLOBAL_CHAT;
@@ -571,15 +571,14 @@ namespace Protocol
 
 		SendBufferRef MakeSendBuffer()
 		{
-			SendBufferRef sendBuffer = SendBufferManager::Open(4096 * 4);
+			SendBufferRef sendBuffer = SendBufferManager::Open(4096);
 			BufferWriter writer(sendBuffer->Buffer(), sendBuffer->AllocSize());
 
 			header.id = PKT_S_NOTICE;
 			header.size = 0; // 나중에 갱신
 			writer.Write(header);
 
-			if (writer.WriteString(message) == false) 
-				return nullptr;
+			if (writer.WriteString(message) == false) return nullptr;
 
 
 			// 헤더의 최종 패킷 크기 업데이트

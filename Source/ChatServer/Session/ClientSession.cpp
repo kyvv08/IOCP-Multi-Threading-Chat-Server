@@ -1,10 +1,10 @@
-#include "Session/ClientSession.h"
+﻿#include "Session/ClientSession.h"
 #include "Room/Room.h"
 #include "Service/AbuseMonitor.h"
 #include "Monitoring/ServerStats.h"
 #include "Protocol/ServerPacketHandler.h"
 
-ClientSession::ClientSession()
+ClientSession::ClientSession() : PacketSession(SERVER_RECV_BUFFER_SIZE)
 {
 	UpdateHeartbeat(::GetTickCount64());
 }
@@ -29,7 +29,11 @@ void ClientSession::OnRecvPacket(BYTE* buffer, int32 len)
 	// 1. 패킷 Flooding 어뷰징 감지 (TokenBucket 검사)
 	if (!_rateLimiter.Consume(1))
 	{
-		AbuseMonitor::ReportAbuse(GetSessionId(), _playerName, ip, port, L"Packet Flooding Detected (Exceeded Rate Limit)");
+		// [핵심]: exchange(true)가 false를 반환하는 '최초 1회'만 ReportAbuse 실행!
+		if (!_isAbuseReported.exchange(true))
+		{
+			AbuseMonitor::ReportAbuse(GetSessionId(), _playerName, ip, port, L"Packet Flooding Detected");
+		}
 		Disconnect(L"Packet Flooding Detected");
 		return;
 	}

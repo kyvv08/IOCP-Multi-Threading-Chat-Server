@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Common/Types.h"
 #include <vector>
 

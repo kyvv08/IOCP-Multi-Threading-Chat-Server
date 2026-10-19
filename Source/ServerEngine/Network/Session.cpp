@@ -3,7 +3,7 @@
 #include "Network/Service.h"
 #include "Common/Macros.h"
 
-Session::Session() : _recvBuffer(RECV_BUFFER_SIZE)
+Session::Session(int32 recvBufferSize) : _recvBuffer(recvBufferSize)
 {
 	_socket = SocketUtils::CreateSocket();
 	_sessionId = ID.fetch_add(1);

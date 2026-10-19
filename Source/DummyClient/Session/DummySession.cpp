@@ -1,4 +1,4 @@
-﻿#include "Session/DummySession.h"
+#include "Session/DummySession.h"
 #include "Protocol/ClientPacketHandler.h"
 #include <iostream>
 
@@ -10,7 +10,7 @@ std::atomic<uint64> StressStats::totalSentPackets{ 0 };
 std::atomic<uint64> StressStats::totalRecvPackets{ 0 };
 
 DummySession::DummySession(BotScenario scenario, int32 botIndex)
-	: _scenario(scenario), _botIndex(botIndex)
+	: PacketSession(DEFAULT_RECV_BUFFER_SIZE), _scenario(scenario), _botIndex(botIndex)
 {
 	_botName = "Bot_" + std::to_string(botIndex);
 }

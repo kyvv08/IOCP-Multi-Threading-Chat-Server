@@ -11,6 +11,8 @@
 #include <atomic>
 #include <conio.h>
 
+#define TIME_OUT_MS 15000
+
 int main(int argc, char* argv[])
 {
 	uint16 serverPort = 7777;

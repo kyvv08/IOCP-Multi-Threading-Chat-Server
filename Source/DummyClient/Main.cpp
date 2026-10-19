@@ -58,26 +58,30 @@ int main(int argc, char* argv[])
 		if (choice == 0)
 			break;
 
+		int dummyCount = 4000;
+		std::cout << "Dummy Count : ";
+		std::cin >> dummyCount;
+
 		switch (choice)
 		{
 		case 1:
-			StressTester::RunScenario(BotScenario::Normal, 6000, 3600*10, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::Normal, dummyCount, 3600*10, serverIp, serverPort);
 			break;
 		case 2:
-			StressTester::RunScenario(BotScenario::Slowloris, 100, 20, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::Slowloris, dummyCount, 20, serverIp, serverPort);
 			break;
 		case 3:
-			StressTester::RunScenario(BotScenario::ConnectSpam, 200, 10, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::ConnectSpam, dummyCount, 10, serverIp, serverPort);
 			break;
 		case 4:
-			StressTester::RunScenario(BotScenario::PacketFlood, 100, 10, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::PacketFlood, dummyCount, 10, serverIp, serverPort);
 			break;
 		case 5:
 			std::cout << "\n\033[1;35m>>> RUNNING ALL-IN-ONE CHAOS STRESS SUITE <<<\033[0m\n";
-			StressTester::RunScenario(BotScenario::ConnectSpam, 200, 8, serverIp, serverPort);
-			StressTester::RunScenario(BotScenario::PacketFlood, 100, 8, serverIp, serverPort);
-			StressTester::RunScenario(BotScenario::Slowloris, 100, 18, serverIp, serverPort);
-			StressTester::RunScenario(BotScenario::Normal, 500, 15, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::ConnectSpam, 1000, 8, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::PacketFlood, 300, 8, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::Slowloris, 1000, 30, serverIp, serverPort);
+			StressTester::RunScenario(BotScenario::Normal, 4000, 30, serverIp, serverPort);
 			std::cout << "\n\033[1;32m>>> ALL-IN-ONE CHAOS TEST COMPLETED SUCCESSFULLY! <<<\033[0m\n";
 			break;
 		default:

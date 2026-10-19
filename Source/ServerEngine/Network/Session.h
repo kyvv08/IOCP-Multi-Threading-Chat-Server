@@ -20,10 +20,11 @@ class Session : public IocpObject
 	friend class IocpCore;
 	friend class Service;
 
-	enum { RECV_BUFFER_SIZE = 0x10000 }; // 64KB
-
 public:
-	Session();
+	enum { DEFAULT_RECV_BUFFER_SIZE = 0x10000 }; // 64KB
+	enum { SERVER_RECV_BUFFER_SIZE = 4096 };      // 4KB (서버 세션 최적화용)
+
+	explicit Session(int32 recvBufferSize = DEFAULT_RECV_BUFFER_SIZE);
 	virtual ~Session();
 
 	// 외부 노출 인터페이스

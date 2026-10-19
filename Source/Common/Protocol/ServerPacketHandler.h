@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include "PacketProtocol.h"
 
-#define TIME_OUT_MS 30000 //30초 타임 아웃
-
 // 사용자 정의 패킷 핸들러 전방 선언
 bool Handle_C_LOGIN(PacketSessionRef session, Protocol::C_LOGIN& pkt);
 bool Handle_C_HEARTBEAT(PacketSessionRef session, Protocol::C_HEARTBEAT& pkt);

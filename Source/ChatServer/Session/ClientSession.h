@@ -45,6 +45,8 @@ private:
 	bool _authenticated = false;
 	std::weak_ptr<Room> _room;
 
+	std::atomic<bool> _isAbuseReported{ false }; // 세션당 최초 1회만 리포트 보장
+
 	// 세션별 패킷 플러딩 감지용 토큰 버킷 (최대 40 버스트, 초당 20 충전)
 	TokenBucket _rateLimiter{ 40, 20 };
 };

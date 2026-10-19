@@ -15,7 +15,10 @@ struct PacketHeader
 class PacketSession : public Session
 {
 public:
-	PacketSession() = default;
+	explicit PacketSession(int32 recvBufferSize = DEFAULT_RECV_BUFFER_SIZE)
+		: Session(recvBufferSize)
+	{
+	}
 	virtual ~PacketSession() = default;
 
 	PacketSessionRef GetPacketSessionRef() { return std::static_pointer_cast<PacketSession>(shared_from_this()); }

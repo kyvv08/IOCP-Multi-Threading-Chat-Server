@@ -75,12 +75,12 @@ void StressTester::RunScenario(BotScenario scenario, int32 botCount, int32 durat
 			{
 				if (session && session->IsConnected())
 				{
-					if (rand() % 3 == 0)
+					if (rand() % 10 == 0)
 						session->SendChat("Stress chat test message from " + std::to_string(session->GetBotIndex()));
 					if (sec % 5 == 0)
 						session->SendHeartbeat();
 					if (sec % 20 == 0) {
-						session->SendEnterRoom("", rand() % 50 + 1);
+						session->SendEnterRoom("", rand() % 100 + 1);
 					}
 				}
 			}
