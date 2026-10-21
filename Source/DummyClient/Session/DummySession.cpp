@@ -90,6 +90,21 @@ void DummySession::SendChat(const std::string& msg)
 	StressStats::totalSentPackets.fetch_add(1, std::memory_order_relaxed);
 }
 
+void DummySession::SendLatencyPingChat()
+{
+	if (!IsConnected() || !_isInRoom.load())
+		return;
+
+	uint32 seq = _chatSeq.fetch_add(1, std::memory_order_relaxed);
+	auto nowUs = std::chrono::duration_cast<std::chrono::microseconds>(
+		std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+
+	Protocol::C_ROOM_CHAT chatPkt;
+	chatPkt.message = "LAT:" + std::to_string(seq) + ":" + std::to_string(nowUs);
+	Send(chatPkt.MakeSendBuffer());
+	StressStats::totalSentPackets.fetch_add(1, std::memory_order_relaxed);
+}
+
 void DummySession::SendEnterRoom(const std::string& msg, int roomId)
 {
 	if (!IsConnected())

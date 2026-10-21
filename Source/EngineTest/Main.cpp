@@ -1,4 +1,5 @@
 #include "ServerEngine.h"
+#include "Monitoring/LatencyMonitor.h"
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -736,7 +737,7 @@ void TestStressScenarios()
 				for (auto& s : normalSessions)
 				{
 					if (s && s->IsConnected())
-						s->SendChat("Automated stress bot chat message");
+						s->SendLatencyPingChat();
 				}
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -756,6 +757,72 @@ void TestStressScenarios()
 	}
 
 	std::cout << "  -> Multi-threaded Live Stress Test Succeeded with 100% Stability!" << std::endl;
+	if (LatencyMonitor::GetTotalCount() > 0)
+	{
+		std::cout << "     [RTT Stats] Samples: " << LatencyMonitor::GetTotalCount()
+			<< " | Mean: " << LatencyMonitor::GetAverageMs()
+			<< " ms | P95: " << LatencyMonitor::GetPercentileMs(95.0)
+			<< " ms | P99: " << LatencyMonitor::GetPercentileMs(99.0) << " ms\n";
+	}
+}
+
+void BenchmarkJobAllocation()
+{
+	const int32 threadCount = 8;
+	const int32 iterationsPerThread = 250'000; // 스레드당 50만 회 (총 400만 회)
+	std::cout << "\n======================================================\n";
+	std::cout << " [Pure Allocator Benchmark] 8 Threads, 4,000,000 ops\n";
+	std::cout << "======================================================\n";
+	// -----------------------------------------------------------------
+	// [Test 1] 순수 CRT 힙 (new / delete)
+	// -----------------------------------------------------------------
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		std::vector<std::thread> threads;
+		for (int32 t = 0; t < threadCount; ++t)
+		{
+			threads.emplace_back([iterationsPerThread]()
+				{
+					for (int32 i = 0; i < iterationsPerThread; ++i)
+					{
+						// CRT 힙 할당 (글로벌 힙 락 경합 발생)
+						auto job = std::make_shared<Job>([]() {});
+						job->Execute();
+					}
+				});
+		}
+		for (auto& t : threads) t.join();
+		auto end = std::chrono::high_resolution_clock::now();
+		auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "1. std::make_shared<Job> : " << elapsedMs << " ms\n";
+	}
+	// -----------------------------------------------------------------
+	// [Test 2] 순수 커스텀 락프리 풀 (ObjectPool::Pop / Push)
+	// -----------------------------------------------------------------
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		std::vector<std::thread> threads;
+
+				PoolAllocator::Init(); // 각 스레드 로컬 TLS 캐시 초기화
+
+		for (int32 t = 0; t < threadCount; ++t)
+		{
+			threads.emplace_back([iterationsPerThread]()
+				{
+					for (int32 i = 0; i < iterationsPerThread; ++i)
+					{
+						Job* job = ObjectPool<Job>::Pop([]() {});
+						job->Execute();
+						ObjectPool<Job>::Push(job);
+					}
+				});
+		}
+		for (auto& t : threads) t.join();
+		auto end = std::chrono::high_resolution_clock::now();
+		auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "2. Lock-Free ObjectPool (Pop/Push) : " << elapsedMs << " ms\n";
+	}
+	std::cout << "======================================================\n\n";
 }
 
 int main()
@@ -774,6 +841,7 @@ int main()
 	TestChatServerAndAbuseMonitor();
 	TestMonitoringAndLogging();
 	TestStressScenarios();
+	BenchmarkJobAllocation();
 
 	std::cout << "\n>>> ALL 10 TESTS PASSED WITH 100% SUCCESS! <<<" << std::endl;
 	return 0;

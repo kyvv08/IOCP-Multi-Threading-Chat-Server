@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "ServerEngine.h"
 #include <string>
 #include <atomic>
@@ -42,6 +42,7 @@ public:
 
 	BotScenario GetScenario() const { return _scenario; }
 	int32 GetBotIndex() const { return _botIndex; }
+	const std::string& GetBotName() const { return _botName; }
 
 	void SetLoggedIn(bool val) { _isLoggedIn.store(val); }
 	bool IsLoggedIn() const { return _isLoggedIn.load(); }
@@ -50,6 +51,7 @@ public:
 	bool IsInRoom() const { return _isInRoom.load(); }
 
 	void SendChat(const std::string& msg);
+	void SendLatencyPingChat();
 	void SendEnterRoom(const std::string& msg, int);
 	void SendHeartbeat();
 	void ExecuteFloodAttack(int32 count = 80);
@@ -70,6 +72,7 @@ private:
 	std::string _botName;
 	std::atomic<bool> _isLoggedIn{ false };
 	std::atomic<bool> _isInRoom{ false };
+	std::atomic<uint32> _chatSeq{ 0 };
 	uint64 _connectedTick = 0;
 };
 

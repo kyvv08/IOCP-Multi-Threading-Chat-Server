@@ -1,4 +1,5 @@
-﻿#include "StressTester.h"
+#include "StressTester.h"
+#include "Monitoring/LatencyMonitor.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -8,6 +9,7 @@
 void StressTester::RunScenario(BotScenario scenario, int32 botCount, int32 durationSec, const std::wstring& ip, uint16 port)
 {
 	StressStats::Reset();
+	LatencyMonitor::Reset();
 
 	std::cout << "\n\033[1;36m========================================================================================\033[0m\n";
 	std::cout << "\033[1;37m                 STARTING STRESS TEST SCENARIO: " << GetScenarioName(scenario) << "\033[0m\n";
@@ -75,8 +77,8 @@ void StressTester::RunScenario(BotScenario scenario, int32 botCount, int32 durat
 			{
 				if (session && session->IsConnected())
 				{
-					if (rand() % 10 == 0)
-						session->SendChat("Stress chat test message from " + std::to_string(session->GetBotIndex()));
+					if (rand() % 5 == 0)
+						session->SendLatencyPingChat();
 					if (sec % 5 == 0)
 						session->SendHeartbeat();
 					if (sec % 20 == 0) {
@@ -108,6 +110,19 @@ void StressTester::RunScenario(BotScenario scenario, int32 botCount, int32 durat
 	std::cout << "  * Total Disconnected        : " << StressStats::totalDisconnected.load() << "\n";
 	std::cout << "  * Abuse Forced Disconnects  : " << StressStats::abuseDisconnected.load() << "\n";
 	std::cout << "  * Total Packets Sent / Recv : " << StressStats::totalSentPackets.load() << " / " << StressStats::totalRecvPackets.load() << "\n";
+
+	if (scenario == BotScenario::Normal && LatencyMonitor::GetTotalCount() > 0)
+	{
+		std::cout << "----------------------------------------------------------------------------------------\n";
+		std::cout << "\033[1;35m  [Latency (RTT) Distribution & Statistics (Total Samples: " << LatencyMonitor::GetTotalCount() << ")]\033[0m\n";
+		std::cout << "   * Average (Mean) RTT     : \033[1;32m" << std::fixed << std::setprecision(2) << LatencyMonitor::GetAverageMs() << " ms\033[0m\n";
+		std::cout << "   * Minimum RTT            : " << std::fixed << std::setprecision(2) << LatencyMonitor::GetMinMs() << " ms\n";
+		std::cout << "   * 50th Percentile (P50)  : " << std::fixed << std::setprecision(2) << LatencyMonitor::GetPercentileMs(50.0) << " ms (Median)\n";
+		std::cout << "   * 90th Percentile (P90)  : " << std::fixed << std::setprecision(2) << LatencyMonitor::GetPercentileMs(90.0) << " ms\n";
+		std::cout << "   * 95th Percentile (P95)  : \033[1;33m" << std::fixed << std::setprecision(2) << LatencyMonitor::GetPercentileMs(95.0) << " ms\033[0m\n";
+		std::cout << "   * 99th Percentile (P99)  : \033[1;31m" << std::fixed << std::setprecision(2) << LatencyMonitor::GetPercentileMs(99.0) << " ms (Tail Latency)\033[0m\n";
+		std::cout << "   * Maximum RTT            : " << std::fixed << std::setprecision(2) << LatencyMonitor::GetMaxMs() << " ms\n";
+	}
 	std::cout << "----------------------------------------------------------------------------------------\n";
 
 	bool testPassed = false;
@@ -158,11 +173,28 @@ void StressTester::RenderProgress(BotScenario scenario, int32 botCount, int32 el
 	uint64 sent = StressStats::totalSentPackets.load();
 	uint64 recv = StressStats::totalRecvPackets.load();
 
+	uint64 latencySamples = LatencyMonitor::GetTotalCount();
+	double avgLatency = LatencyMonitor::GetAverageMs();
+	double p95Latency = LatencyMonitor::GetPercentileMs(95.0);
+	double p99Latency = LatencyMonitor::GetPercentileMs(99.0);
+
 	int32 progressPercent = (elapsedSec * 100) / totalSec;
 
 	std::cout << "\r\033[1;33m[" << std::setw(3) << progressPercent << "%]\033[0m "
 		<< "Active CCU: \033[1;32m" << std::setw(4) << active << "\033[0m | "
-		<< "Disconns: \033[1;37m" << std::setw(4) << disconnected << "\033[0m | "
-		<< "Abuse Blocked: \033[1;31m" << std::setw(4) << abuse << "\033[0m | "
-		<< "Sent/Recv Pkts: \033[1;36m" << sent << " / " << recv << "\033[0m (" << elapsedSec << "s / " << totalSec << "s)   " << std::flush;
+		<< "Sent/Recv: \033[1;36m" << sent << "/" << recv << "\033[0m | ";
+
+	if (latencySamples > 0)
+	{
+		std::cout << "RTT(ms) Avg:\033[1;32m" << std::fixed << std::setprecision(1) << avgLatency << "\033[0m "
+			<< "P95:\033[1;33m" << p95Latency << "\033[0m "
+			<< "P99:\033[1;31m" << p99Latency << "\033[0m "
+			<< "(N=" << latencySamples << ") ";
+	}
+	else
+	{
+		std::cout << "Disconns:\033[1;37m" << disconnected << "\033[0m | Abuse:\033[1;31m" << abuse << "\033[0m ";
+	}
+
+	std::cout << "(" << elapsedSec << "s/" << totalSec << "s)   " << std::flush;
 }

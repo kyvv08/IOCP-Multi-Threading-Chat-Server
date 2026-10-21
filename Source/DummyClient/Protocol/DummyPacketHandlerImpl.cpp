@@ -1,5 +1,7 @@
-﻿#include "Protocol/ClientPacketHandler.h"
+#include "Protocol/ClientPacketHandler.h"
 #include "Session/DummySession.h"
+#include "Monitoring/LatencyMonitor.h"
+#include <chrono>
 
 bool Handle_S_LOGIN(PacketSessionRef session, Protocol::S_LOGIN& pkt)
 {
@@ -51,8 +53,35 @@ bool Handle_S_LEAVE_ROOM(PacketSessionRef session, Protocol::S_LEAVE_ROOM& /*pkt
 	return true;
 }
 
-bool Handle_S_ROOM_CHAT(PacketSessionRef /*session*/, Protocol::S_ROOM_CHAT& /*pkt*/)
+bool Handle_S_ROOM_CHAT(PacketSessionRef session, Protocol::S_ROOM_CHAT& pkt)
 {
+	DummySessionRef dummy = std::static_pointer_cast<DummySession>(session);
+	if (dummy && pkt.senderName == dummy->GetBotName())
+	{
+		// 자신이 전송한 레이턴시 태그 패킷인지 확인 ("LAT:<seq>:<timestampUs>")
+		if (pkt.message.rfind("LAT:", 0) == 0)
+		{
+			size_t firstColon = pkt.message.find(':', 4);
+			if (firstColon != std::string::npos)
+			{
+				try
+				{
+					uint64 sentUs = std::stoull(pkt.message.substr(firstColon + 1));
+					auto nowUs = std::chrono::duration_cast<std::chrono::microseconds>(
+						std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+
+					if (nowUs >= sentUs)
+					{
+						uint64 rttUs = static_cast<uint64>(nowUs - sentUs);
+						LatencyMonitor::RecordSample(rttUs);
+					}
+				}
+				catch (...)
+				{
+				}
+			}
+		}
+	}
 	return true;
 }
 
