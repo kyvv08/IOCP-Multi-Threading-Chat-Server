@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <iostream>
 
 #define CRASH(cause)						\
@@ -8,6 +8,7 @@
 	__analysis_assume(crashVal != nullptr);	\
 	*crashVal = 0xDEADBEEF;					\
 }
+
 
 #define ASSERT_CRASH(expr)			\
 {									\

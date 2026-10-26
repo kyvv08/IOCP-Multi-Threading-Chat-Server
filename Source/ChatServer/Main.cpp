@@ -1,4 +1,4 @@
-#include "ServerEngine.h"
+﻿#include "ServerEngine.h"
 #include "Session/ClientSession.h"
 #include "Room/RoomManager.h"
 #include "Service/AbuseMonitor.h"
@@ -138,6 +138,12 @@ int main(int argc, char* argv[])
 			{
 				::system("cls");
 				ConsoleDashboard::Render(serverService);
+			}
+			else if (key == 'x' || key == 'X')
+			{
+				std::cout << "\n\033[1;31m[TEST] Triggering Intentional Crash for Minidump Verification...\033[0m\n";
+				// 의도적인 ASSERT_CRASH 유발 (덤프 생성 트리거)
+				ASSERT_CRASH(false);
 			}
 		}
 
