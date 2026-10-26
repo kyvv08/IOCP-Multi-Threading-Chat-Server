@@ -831,6 +831,11 @@ int main()
 	std::cout << "    [Step 7] Full Architecture & Stress Testing   " << std::endl;
 	std::cout << "==================================================" << std::endl;
 
+	CrashDump::Init();
+	bool dumpCreated = CrashDump::CreateDump(nullptr, L"VerificationTest");
+	assert(dumpCreated == true);
+	std::cout << "  -> Windows Minidump Engine Verified Successfully!\n" << std::endl;
+
 	TestMemoryPool();
 	TestRingBuffer();
 	TestSendBuffer();

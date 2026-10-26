@@ -1,7 +1,9 @@
 #pragma once
+#include <iostream>
 
 #define CRASH(cause)						\
 {											\
+	std::cerr << "\n[FATAL CRASH] Reason: " << (cause) << " (File: " << __FILE__ << ", Line: " << __LINE__ << ")\n"; \
 	uint32* crashVal = nullptr;				\
 	__analysis_assume(crashVal != nullptr);	\
 	*crashVal = 0xDEADBEEF;					\
@@ -11,7 +13,7 @@
 {									\
 	if (!(expr))					\
 	{								\
-		CRASH("ASSERT_CRASH");		\
+		CRASH("ASSERT_CRASH: " #expr); \
 		__analysis_assume(expr);	\
 	}								\
 }

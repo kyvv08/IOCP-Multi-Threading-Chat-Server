@@ -1,4 +1,4 @@
-#include "StressTester.h"
+﻿#include "StressTester.h"
 #include "Monitoring/LatencyMonitor.h"
 #include <iostream>
 #include <iomanip>
@@ -77,13 +77,12 @@ void StressTester::RunScenario(BotScenario scenario, int32 botCount, int32 durat
 			{
 				if (session && session->IsConnected())
 				{
-					if (rand() % 5 == 0)
+					if (sec % 1 == 0)
 						session->SendLatencyPingChat();
-					if (sec % 5 == 0)
+					if (rand() % 3 == 0)
 						session->SendHeartbeat();
-					if (sec % 20 == 0) {
+					if (sec % 10 == 0) 
 						session->SendEnterRoom("", rand() % 100 + 1);
-					}
 				}
 			}
 		}

@@ -41,13 +41,26 @@ void Session::Send(SendBufferRef sendBuffer)
 		return;
 
 	bool registerSend = false;
+	bool queueOverflow = false;
 
 	{
 		SpinLockGuard guard(_sendLock);
-		_sendQueue.push(sendBuffer);
+		if (_sendQueue.size() >= MAX_SEND_QUEUE_SIZE)
+		{
+			queueOverflow = true;
+		}
+		else
+		{
+			_sendQueue.push_back(sendBuffer);
+			if (!_isSending.exchange(true))
+				registerSend = true;
+		}
+	}
 
-		if (!_isSending.exchange(true))
-			registerSend = true;
+	if (queueOverflow)
+	{
+		Disconnect(L"SendQueue Overflow (High-Water Mark Exceeded)");
+		return;
 	}
 
 	if (registerSend)
@@ -60,14 +73,28 @@ void Session::Send(const std::vector<SendBufferRef>& sendBuffers)
 		return;
 
 	bool registerSend = false;
+	bool queueOverflow = false;
 
 	{
 		SpinLockGuard guard(_sendLock);
-		for (const auto& sb : sendBuffers)
-			_sendQueue.push(sb);
+		if (_sendQueue.size() + sendBuffers.size() >= MAX_SEND_QUEUE_SIZE)
+		{
+			queueOverflow = true;
+		}
+		else
+		{
+			for (const auto& sb : sendBuffers)
+				_sendQueue.push_back(sb);
 
-		if (!_isSending.exchange(true))
-			registerSend = true;
+			if (!_isSending.exchange(true))
+				registerSend = true;
+		}
+	}
+
+	if (queueOverflow)
+	{
+		Disconnect(L"SendQueue Overflow (High-Water Mark Exceeded)");
+		return;
 	}
 
 	if (registerSend)
@@ -176,39 +203,54 @@ void Session::RegisterSend()
 	_sendEvent.Init();
 	_sendEvent.owner = shared_from_this();
 
-	std::vector<WSABUF> wsaBufs;
+	constexpr int32 MAX_GATHER = 64;
+	WSABUF wsaBufs[MAX_GATHER];
+	int32 bufCount = 0;
 
 	{
 		SpinLockGuard guard(_sendLock);
-		while (!_sendQueue.empty())
+		while (!_sendQueue.empty() && bufCount < MAX_GATHER)
 		{
 			SendBufferRef sendBuffer = _sendQueue.front();
-			_sendQueue.pop();
+			_sendQueue.pop_front();
 			_sendEvent.sendBuffers.push_back(sendBuffer);
 
 			WSABUF wsaBuf;
-			wsaBuf.buf = reinterpret_cast<CHAR*>(sendBuffer->Buffer());
-			wsaBuf.len = static_cast<ULONG>(sendBuffer->WriteSize());
-			wsaBufs.push_back(wsaBuf);
+			if (bufCount == 0 && _sendOffset > 0)
+			{
+				wsaBuf.buf = reinterpret_cast<CHAR*>(sendBuffer->Buffer() + _sendOffset);
+				wsaBuf.len = static_cast<ULONG>(sendBuffer->WriteSize() - _sendOffset);
+			}
+			else
+			{
+				wsaBuf.buf = reinterpret_cast<CHAR*>(sendBuffer->Buffer());
+				wsaBuf.len = static_cast<ULONG>(sendBuffer->WriteSize());
+			}
+
+			wsaBufs[bufCount++] = wsaBuf;
 		}
 	}
 
-	if (wsaBufs.empty())
+	if (bufCount == 0)
 	{
 		_isSending.store(false);
+		_sendEvent.owner = nullptr;
 		return;
 	}
 
 	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == ::WSASend(_socket, wsaBufs.data(), static_cast<DWORD>(wsaBufs.size()), &numOfBytes, 0, &_sendEvent, NULL))
+	if (SOCKET_ERROR == ::WSASend(_socket, wsaBufs, static_cast<DWORD>(bufCount), &numOfBytes, 0, &_sendEvent, NULL))
 	{
 		int32 errorCode = ::WSAGetLastError();
 		if (errorCode != WSA_IO_PENDING)
 		{
-			HandleError(errorCode);
-			_sendEvent.owner = nullptr;
-			_sendEvent.sendBuffers.clear();
-			_isSending.store(false);
+			if (!IsRecoverableErrorCode(errorCode))
+			{
+				HandleError(errorCode);
+				_sendEvent.owner = nullptr;
+				_sendEvent.sendBuffers.clear();
+				_isSending.store(false);
+			}
 		}
 	}
 }
@@ -267,32 +309,86 @@ void Session::ProcessRecv(int32 numOfBytes)
 void Session::ProcessSend(int32 numOfBytes)
 {
 	_sendEvent.owner = nullptr;
-	_sendEvent.sendBuffers.clear();
 
 	if (numOfBytes == 0)
 	{
-		Disconnect(L"Send 0 bytes");
+		_sendEvent.sendBuffers.clear();
+		Disconnect(L"Send 0 bytes (Connection Broken)");
 		return;
 	}
 
 	OnSend(numOfBytes);
 
-	bool registerSend = false;
+	int32 bytesRemaining = numOfBytes;
+	std::vector<SendBufferRef> uncompletedBuffers;
+	int32 nextOffset = 0;
 
+	// [정책 1]: 완료된 바이트만큼 버퍼 리스트를 소모
+	for (size_t i = 0; i < _sendEvent.sendBuffers.size(); ++i)
 	{
-		SpinLockGuard guard(_sendLock);
-		if (_sendQueue.empty())
+		SendBufferRef sb = _sendEvent.sendBuffers[i];
+		int32 actualPendingBytes = sb->WriteSize() - (i == 0 ? _sendOffset : 0);
+
+		if (bytesRemaining >= actualPendingBytes)
 		{
-			_isSending.store(false);
+			// 이 버퍼는 완전 전송됨
+			bytesRemaining -= actualPendingBytes;
 		}
 		else
 		{
+			// [부분 송신 발생]: 이 버퍼에서 bytesRemaining만큼만 전송되고 남음
+			nextOffset = (i == 0 ? _sendOffset : 0) + bytesRemaining;
+			for (size_t j = i; j < _sendEvent.sendBuffers.size(); ++j)
+				uncompletedBuffers.push_back(_sendEvent.sendBuffers[j]);
+			bytesRemaining = 0;
+			break;
+		}
+	}
+
+	_sendEvent.sendBuffers.clear();
+
+	bool registerSend = false;
+	{
+		SpinLockGuard guard(_sendLock);
+
+		if (!uncompletedBuffers.empty())
+		{
+			// 미완료된 버퍼들을 _sendQueue 맨 앞(front)에 역순으로 재삽입하여 순서 보장!
+			for (auto it = uncompletedBuffers.rbegin(); it != uncompletedBuffers.rend(); ++it)
+			{
+				_sendQueue.push_front(*it);
+			}
+			_sendOffset = nextOffset;
 			registerSend = true;
+		}
+		else
+		{
+			_sendOffset = 0;
+			if (_sendQueue.empty())
+			{
+				_isSending.store(false);
+			}
+			else
+			{
+				registerSend = true;
+			}
 		}
 	}
 
 	if (registerSend)
 		RegisterSend();
+}
+
+bool Session::IsRecoverableErrorCode(int32 errorCode)
+{
+	switch (errorCode)
+	{
+	case WSAEWOULDBLOCK:
+	case WSA_IO_INCOMPLETE:
+		return true;
+	default:
+		return false;
+	}
 }
 
 void Session::HandleError(int32 errorCode)
@@ -303,8 +399,12 @@ void Session::HandleError(int32 errorCode)
 	case WSAECONNABORTED:
 		Disconnect(L"Connection reset/aborted");
 		break;
+	case WSAENETDOWN:
+	case WSAENETUNREACH:
+		Disconnect(L"Network subsystem failed");
+		break;
 	default:
-		Disconnect(std::to_wstring(errorCode));
+		Disconnect(L"Socket Error: " + std::to_wstring(errorCode));
 		break;
 	}
 }

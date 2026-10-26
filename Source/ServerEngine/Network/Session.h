@@ -5,7 +5,7 @@
 #include "Buffer/RingBuffer.h"
 #include "Buffer/SendBuffer.h"
 #include "Lock/SpinLock.h"
-#include <queue>
+#include <deque>
 
 static std::atomic<uint64> ID = 0;
 
@@ -23,6 +23,8 @@ class Session : public IocpObject
 public:
 	enum { DEFAULT_RECV_BUFFER_SIZE = 0x10000 }; // 64KB
 	enum { SERVER_RECV_BUFFER_SIZE = 4096 };      // 4KB (서버 세션 최적화용)
+	enum { MAX_SEND_QUEUE_SIZE = 500 };           // 송신 큐 한도 (Slow Consumer 차단 임계치)
+	enum { WARN_SEND_QUEUE_SIZE = 250 };          // 송신 큐 경고 임계치 (글로벌 모니터링용)
 
 	explicit Session(int32 recvBufferSize = DEFAULT_RECV_BUFFER_SIZE);
 	virtual ~Session();
@@ -48,6 +50,12 @@ public:
 	uint64 GetLastHeartbeatTick() const { return _lastHeartbeatTick.load(); }
 	void UpdateHeartbeat(uint64 tick) { _lastHeartbeatTick.store(tick); }
 
+	int32 GetSendQueueSize()
+	{
+		SpinLockGuard guard(_sendLock);
+		return static_cast<int32>(_sendQueue.size());
+	}
+
 public:
 	// IocpObject 인터페이스 구현
 	HANDLE GetHandle() override { return reinterpret_cast<HANDLE>(_socket); }
@@ -66,6 +74,7 @@ private:
 	void ProcessSend(int32 numOfBytes);
 
 	void HandleError(int32 errorCode);
+	bool IsRecoverableErrorCode(int32 errorCode);
 
 protected:
 	// 비즈니스 로직 이벤트 훅
@@ -88,8 +97,9 @@ private:
 
 	// 송신 큐 및 스핀락
 	SpinLock _sendLock;
-	std::queue<SendBufferRef> _sendQueue;
+	std::deque<SendBufferRef> _sendQueue;
 	std::atomic<bool> _isSending{ false };
+	int32 _sendOffset = 0; // 부분 송신 진행 오프셋 (바이트 단위)
 
 	// 비동기 IOCP 이벤트 객체
 	ConnectEvent _connectEvent;

@@ -3,6 +3,7 @@
 // Common
 #include "Common/Types.h"
 #include "Common/Macros.h"
+#include "Common/CrashDump.h"
 
 // Lock
 #include "Lock/SpinLock.h"

@@ -1,4 +1,4 @@
-﻿#include "ServerEngine.h"
+#include "ServerEngine.h"
 #include "Session/ClientSession.h"
 #include "Room/RoomManager.h"
 #include "Service/AbuseMonitor.h"
@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
 	}
 
 	// 1. 코어 서브시스템 초기화
+	CrashDump::Init();
 	SocketUtils::Init();
 	PoolAllocator::Init();
 	RoomManager::Init();
@@ -50,7 +51,7 @@ int main(int argc, char* argv[])
 	std::atomic<bool> isRunning{ true };
 
 	// 3. IOCP 및 JobQueue 병합 워커 스레드 가동
-	const uint32 threadCount = std::thread::hardware_concurrency() > 0 ? std::thread::hardware_concurrency() * 2 : 4;
+	const uint32 threadCount = std::thread::hardware_concurrency() > 0 ? std::thread::hardware_concurrency() : 4;
 	std::vector<std::thread> workerThreads;
 
 	for (uint32 i = 0; i < threadCount; ++i)
