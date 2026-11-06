@@ -432,3 +432,18 @@ FodyWeavers.xsd
 /*
 
 !/Source/
+!/README.md
+!/.gitignore
+!/IOCP_MulltiThread.sln
+!/GenPackets.bat
+
+# Performance reports and reproducible measurement artifacts
+!/docs/
+!/docs/performance/
+!/docs/performance/*.md
+!/run_function_profile_6000.ps1
+!/FunctionProfileReport_17777.csv
+!/server_cpu_memory_functionprofile_6000.csv
+!/server_functionprofile_6000.stdout.log
+!/dummy_functionprofile_3000_a.stdout.log
+!/dummy_functionprofile_3000_b.stdout.log

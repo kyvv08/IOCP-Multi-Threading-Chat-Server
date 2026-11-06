@@ -3,7 +3,7 @@
 ![C++17](https://img.shields.io/badge/Language-C%2B%2B17-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20x64-0078D6.svg)
 ![Network](https://img.shields.io/badge/Network-Windows%20IOCP-brightgreen.svg)
-![Toolchain](https://img.shields.io/badge/Build-CMake%20%7C%20MSVC%202026-orange.svg)
+![Toolchain](https://img.shields.io/badge/Build-Visual%20Studio%202022-orange.svg)
 ![Code Generator](https://img.shields.io/badge/Generator-.NET%2010%20C%23-512BD4.svg)
 ![Tests](https://img.shields.io/badge/Tests-10%2F10%20Passed%20(100%25)-success.svg)
 
@@ -24,6 +24,7 @@
 - [4. 프로젝트 디렉토리 구조 (Directory Structure)](#4-프로젝트-디렉토리-구조-directory-structure)
 - [5. 빌드 및 실행 방법 (Build & Run Guide)](#5-빌드-및-실행-방법-build--run-guide)
 - [6. 포트폴리오 기술 요약서 (Portfolio Resume Summary)](#6-포트폴리오-기술-요약서-portfolio-resume-summary)
+- [7. 성능 기준선: 정상 채팅 6,000 CCU](#7-성능-기준선-정상-채팅-6000-ccu)
 
 ---
 
@@ -33,7 +34,7 @@
 flowchart TB
     subgraph ClientLayer [" 클라이언트 레이어 (Clients) "]
         ChatClient["대화형 콘솔 클라이언트\n(ChatClient.exe)"]
-        DummyClient["멀티스레드 스트레스 봇 (500~2000 CCU)\n(DummyClient.exe)"]
+        DummyClient["멀티스레드 스트레스 봇 (2개 프로세스 × 3000 = 6000 CCU)\n(DummyClient.exe)"]
     end
 
     subgraph NetworkLayer [" IOCP 네트워크 코어 (ServerEngine) "]
@@ -125,7 +126,7 @@ flowchart TB
 
 | 시나리오 번호 | 시나리오 명칭 | 동작 방식 및 검증 목적 |
 | :---: | :--- | :--- |
-| **[1]** | **Normal Chatting Load Test** | 500~2,000대 봇이 동시 접속하여 로그인, 방 입장, 주기적 채팅 및 하트비트를 송수신하며 서버 처리량(PPS/BPS) 측정 |
+| **[1]** | **Normal Chatting Load Test** | 프로세스별 봇 수를 입력해 로그인, 방 입장, 주기적 채팅 및 하트비트를 300초간 송수신. 기준 시나리오는 2개 프로세스 × 3,000봇 = 6,000 CCU |
 | **[2]** | **Slowloris / Idle Timeout Test** | 접속 후 패킷/하트비트를 일체 보내지 않고 세션만 점유 $\rightarrow$ 15초 후 서버 `AbuseMonitor`의 타임아웃 강제 퇴장 검증 |
 | **[3]** | **Connect / Disconnect Spam Test** | 연결 직후 10ms 만에 Disconnect를 초고속 반복 $\rightarrow$ 소켓 풀 재활용, 메모리 누수 0% 및 커널 핸들 고갈 방지 검증 |
 | **[4]** | **Packet Flooding Attack Test** | 초당 80개 이상의 패킷을 연속 난사 $\rightarrow$ 서버의 `TokenBucket` 레이트 리미터가 즉시 어뷰징 감지 및 강제 차단 검증 |
@@ -204,7 +205,7 @@ ChatServer/
 │   └── EngineTest/              # 10대 핵심 엔진 서브시스템 단위/통합 테스트 러너
 │       └── Main.cpp             # (10/10 Tests Passed with 100% Success)
 │
-├── CMakeLists.txt               # 통합 CMake 빌드 스크립트
+├── IOCP_MulltiThread.sln         # Visual Studio 통합 솔루션
 ├── GenPackets.bat               # 패킷 자동 생성 배치 스크립트
 └── README.md                    # 프로젝트 종합 기술 문서
 ```
@@ -216,17 +217,25 @@ ChatServer/
 ### 요구 사양
 * **OS**: Windows 10 / 11 (x64)
 * **컴파일러**: Visual Studio 2022 이상 (MSVC v143+, C++17 지원)
-* **빌드 툴**: CMake 3.20 이상
-* **패킷 제너레이터 실행 환경**: .NET SDK 8.0 이상 (10.0 권장)
+* **빌드 툴**: Visual Studio 2022 (MSVC v143, x64)
+* **패킷 제너레이터 실행 환경**: .NET SDK 10.0
 
-### 빌드 명령어 (Visual Studio x64 Developer Command Prompt)
+### Visual Studio 빌드
+
+저장소 루트의 `IOCP_MulltiThread.sln`을 Visual Studio 2022에서 열고 솔루션 플랫폼을 **x64**로 선택합니다. 구성은 **Debug** 또는 **Release**를 선택한 뒤 솔루션을 빌드하면 됩니다.
+
+솔루션에는 `ServerEngine` 정적 라이브러리, `ChatServer`, `ChatClient`, `DummyClient`, `EngineTest` C++ 프로젝트와 `PacketGenerator` C# 프로젝트가 포함되어 있습니다. C++ 프로젝트는 C++17과 MSVC v143 도구 집합을 사용합니다. `EngineTest`는 테스트 러너에서 참조하는 서버/클라이언트 소스도 함께 빌드합니다.
+
+모든 실행 파일, 정적 라이브러리와 C# 빌드 산출물은 구성별 폴더에 저장됩니다: `Bin/Debug/`, `Bin/Release/`. 중간 파일은 프로젝트별로 `Build/obj/` 아래에 분리됩니다.
+
+명령줄에서는 Visual Studio x64 Developer PowerShell에서 실행합니다:
+
 ```powershell
-# 1. 패킷 코드 생성 (필요 시)
+# 필요할 때 패킷 코드 생성
 .\GenPackets.bat
 
-# 2. CMake 구성 및 Release 빌드
-cmake -B Build -S .
-cmake --build Build --config Release
+# Release 솔루션 빌드
+msbuild .\IOCP_MulltiThread.sln /m /p:Configuration=Release /p:Platform=x64
 ```
 
 ### 실행 가이드
@@ -252,3 +261,21 @@ cmake --build Build --config Release
 1. **메모리 및 버퍼 최적화**: Lock-Free S-List 메모리 풀, Scatter-Gather Zero-Copy 링버퍼, 1:N 참조 카운팅 SendBuffer 청크를 통해 **힙 락 경합 0% 및 제로 카피 I/O 달성**.
 2. **동기화 및 동시성 설계**: Actor 모델 `JobQueue`를 도입하여 **채팅 룸 내부 락을 0개(Lock-Free)로 제거**하고, 유저 레벨 `SpinLock`(`_mm_pause`)과 `SRWLOCK`을 적재적소에 계층화.
 3. **네트워크 및 안정성**: 16개 `AcceptEx` 풀링, C# .NET 10 패킷 자동화 툴체인, 원자적 `TokenBucket` 레이트 리미터 및 15초 하트비트 감시를 갖춘 실시간 ANSI TUI 관제 시스템 구축.
+
+---
+
+## 7. 성능 기준선: 정상 채팅 6,000 CCU
+
+평시 부하 시나리오는 **DummyClient 두 프로세스 × 3,000봇 = 총 6,000 CCU**로 운영합니다. 10,000 세션은 서버 설정 상한이며, 이 기준선은 6,000 CCU에서 수집한 성능 자료입니다. 재현 방법, 측정값, 병목 분석은 [6,000봇 성능 기준선 보고서](docs/performance/6000-bot-baseline.md)를 참고하세요.
+
+함수별 표본 타이밍 결과와 병목 후보는 [6,000 CCU 함수 프로파일링 보고서](docs/performance/6000-ccu-function-profile-ko.md)에 기록했습니다.
+
+| 최근 Release x64 측정 (정상 채팅 300초) | 결과 |
+|---|---:|
+| 동시 접속 | 6,000 (연결 해제 0건) |
+| RTT p95 / p99 | 더미 A **22.6 / 29.5ms**, 더미 B **22.9 / 30.7ms** |
+| 서버 CPU 평균 | **1.67 논리 코어** (16코어 호스트의 10.46%) |
+| 작업 집합 / Private Bytes 피크 | **88.15 / 84.15MB** |
+| 함수 표본 | `Room::HandleChat` 392k, `Room::Broadcast` 329k, `Session::Send` 6.5k CPU 사이클/호출(평균) |
+
+프로파일 계측 측정이며 CPU 사이클 값은 시간으로 환산하지 않았습니다. 상세 조건과 해석은 위 보고서를 참고하세요.
